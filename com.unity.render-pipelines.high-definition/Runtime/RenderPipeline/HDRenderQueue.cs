@@ -21,6 +21,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             // Warning: we must not change Geometry last value to stay compatible with occlusion
             OpaqueLast = UnityEngine.Rendering.RenderQueue.GeometryLast,
 
+            AfterPostprocessOpaque = UnityEngine.Rendering.RenderQueue.GeometryLast + 1,
+            AfterPostprocessOpaqueAlphaTest = UnityEngine.Rendering.RenderQueue.GeometryLast + 2,
+
             // For transparent pass we define a range of 200 value to define the priority
             // Warning: Be sure no range are overlapping
             PreRefractionFirst = 2750 - k_TransparentPriorityQueueRange,
@@ -31,6 +34,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             Transparent = UnityEngine.Rendering.RenderQueue.Transparent,
             TransparentLast = UnityEngine.Rendering.RenderQueue.Transparent + k_TransparentPriorityQueueRange,
 
+            LowTransparentFirst = 3400 - k_TransparentPriorityQueueRange,
+            LowTransparent = 3400,
+            LowTransparentLast = 3400 + k_TransparentPriorityQueueRange,
+
+            AfterPostprocessTransparentFirst = 3700 - k_TransparentPriorityQueueRange,
+            AfterPostprocessTransparent = 3700,
+            AfterPostprocessTransparentLast = 3700 + k_TransparentPriorityQueueRange,
+
             Overlay = UnityEngine.Rendering.RenderQueue.Overlay
         }
 
@@ -38,9 +49,14 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static readonly RenderQueueRange k_RenderQueue_OpaqueAlphaTest = new RenderQueueRange { lowerBound = (int)Priority.OpaqueAlphaTest, upperBound = (int)Priority.OpaqueLast };
         public static readonly RenderQueueRange k_RenderQueue_AllOpaque = new RenderQueueRange { lowerBound = (int)Priority.Opaque, upperBound = (int)Priority.OpaqueLast };
 
+        public static readonly RenderQueueRange k_RenderQueue_OpaqueAfterPostProcessing = new RenderQueueRange { lowerBound = (int)Priority.AfterPostprocessOpaque, upperBound = (int)Priority.AfterPostprocessOpaqueAlphaTest };
+
         public static readonly RenderQueueRange k_RenderQueue_PreRefraction = new RenderQueueRange { lowerBound = (int)Priority.PreRefractionFirst, upperBound = (int)Priority.PreRefractionLast };
         public static readonly RenderQueueRange k_RenderQueue_Transparent = new RenderQueueRange { lowerBound = (int)Priority.TransparentFirst, upperBound = (int)Priority.TransparentLast };
-        public static readonly RenderQueueRange k_RenderQueue_AllTransparent = new RenderQueueRange { lowerBound = (int)Priority.PreRefractionFirst, upperBound = (int)Priority.TransparentLast };
+        public static readonly RenderQueueRange k_RenderQueue_LowTransparent = new RenderQueueRange { lowerBound = (int)Priority.LowTransparentFirst, upperBound = (int)Priority.LowTransparentLast };
+        public static readonly RenderQueueRange k_RenderQueue_AllTransparent = new RenderQueueRange { lowerBound = (int)Priority.PreRefractionFirst, upperBound = (int)Priority.LowTransparentLast };
+
+        public static readonly RenderQueueRange k_RenderQueue_AfterPostProcessTransparent = new RenderQueueRange { lowerBound = (int)Priority.AfterPostprocessTransparentFirst, upperBound = (int)Priority.AfterPostprocessTransparentLast };
 
         public static readonly RenderQueueRange k_RenderQueue_All = new RenderQueueRange { lowerBound = 0, upperBound = 5000 };
 
