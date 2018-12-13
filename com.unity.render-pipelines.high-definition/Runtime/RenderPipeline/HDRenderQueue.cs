@@ -45,6 +45,19 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             Overlay = UnityEngine.Rendering.RenderQueue.Overlay
         }
 
+        public enum RenderQueueType
+        {
+            Background,
+            Opaque,
+            AfterPostProcessOpaque,
+            PreRefraction,
+            Transparent,
+            LowTransparent,
+            AfterPostprocessTransparent,
+            Overlay,
+            Unknown
+        }
+
         public static readonly RenderQueueRange k_RenderQueue_OpaqueNoAlphaTest = new RenderQueueRange { lowerBound = (int)Priority.Opaque, upperBound = (int)Priority.OpaqueAlphaTest - 1 };
         public static readonly RenderQueueRange k_RenderQueue_OpaqueAlphaTest = new RenderQueueRange { lowerBound = (int)Priority.OpaqueAlphaTest, upperBound = (int)Priority.OpaqueLast };
         public static readonly RenderQueueRange k_RenderQueue_AllOpaque = new RenderQueueRange { lowerBound = (int)Priority.Opaque, upperBound = (int)Priority.OpaqueLast };
@@ -65,5 +78,87 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static int Clamps(this RenderQueueRange range, int value) => Math.Max(range.lowerBound, Math.Min(value, range.upperBound));
 
         public static int ClampsTransparentRangePriority(int value) => Math.Max(-k_TransparentPriorityQueueRange, Math.Min(value, k_TransparentPriorityQueueRange));
+
+        public static RenderQueueType GetTypeByRenderQueueValue(int renderQueue)
+        {
+            if (renderQueue == (int)Priority.Background)
+                return RenderQueueType.Background;
+            if (k_RenderQueue_AllOpaque.Contains(renderQueue))
+                return RenderQueueType.Opaque;
+            if (k_RenderQueue_OpaqueAfterPostProcessing.Contains(renderQueue))
+                return RenderQueueType.AfterPostProcessOpaque;
+            if (k_RenderQueue_PreRefraction.Contains(renderQueue))
+                return RenderQueueType.PreRefraction;
+            if (k_RenderQueue_Transparent.Contains(renderQueue))
+                return RenderQueueType.Transparent;
+            if (k_RenderQueue_LowTransparent.Contains(renderQueue))
+                return RenderQueueType.LowTransparent;
+            if (k_RenderQueue_AfterPostProcessTransparent.Contains(renderQueue))
+                return RenderQueueType.AfterPostprocessTransparent;
+            if (renderQueue == (int)Priority.Overlay)
+                return RenderQueueType.Overlay;
+            return RenderQueueType.Unknown;
+        }
+
+        public static int ChangeType(RenderQueueType targetType, int offset = 0, bool alphaTest = false)
+        {
+            switch (targetType)
+            {
+                case RenderQueueType.Background:
+                    return (int)Priority.Background;
+                case RenderQueueType.Opaque:
+                    return alphaTest ? (int)Priority.OpaqueAlphaTest : (int)Priority.Opaque;
+                case RenderQueueType.AfterPostProcessOpaque:
+                    return alphaTest ? (int)Priority.AfterPostprocessOpaqueAlphaTest : (int)Priority.AfterPostprocessOpaque;
+                case RenderQueueType.PreRefraction:
+                    return (int)Priority.PreRefraction + offset;
+                case RenderQueueType.Transparent:
+                    return (int)Priority.Transparent + offset;
+                case RenderQueueType.LowTransparent:
+                    return (int)Priority.LowTransparent + offset;
+                case RenderQueueType.AfterPostprocessTransparent:
+                    return (int)Priority.AfterPostprocessTransparent + offset;
+                case RenderQueueType.Overlay:
+                    return (int)Priority.Overlay;
+                default:
+                    throw new ArgumentException("Unknown RenderQueueType");
+            }
+        }
+
+        public static RenderQueueType GetTransparentEquivalent(RenderQueueType type)
+        {
+            switch(type)
+            {
+                case RenderQueueType.Opaque:
+                    return RenderQueueType.Transparent;
+                case RenderQueueType.AfterPostProcessOpaque:
+                    return RenderQueueType.AfterPostprocessTransparent;
+                default:
+                    //keep transparent mapped to transparent
+                    return type;
+                case RenderQueueType.Overlay:
+                case RenderQueueType.Background:
+                    throw new ArgumentException("Unknow RenderQueueType conversion to transparent equivalent");
+            }
+        }
+
+        public static RenderQueueType GetOpaqueEquivalent(RenderQueueType type)
+        {
+            switch (type)
+            {
+                case RenderQueueType.PreRefraction:
+                case RenderQueueType.Transparent:
+                case RenderQueueType.LowTransparent:
+                    return RenderQueueType.Opaque;
+                case RenderQueueType.AfterPostprocessTransparent:
+                    return RenderQueueType.AfterPostProcessOpaque;
+                default:
+                    //keep opaque mapped to opaque
+                    return type;
+                case RenderQueueType.Overlay:
+                case RenderQueueType.Background:
+                    throw new ArgumentException("Unknow RenderQueueType conversion to opaque equivalent");
+            }
+        }
     }
 }
