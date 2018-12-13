@@ -130,8 +130,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         protected const string kDistortionBlurRemapMin = "_DistortionBlurRemapMin";
         protected MaterialProperty distortionBlurRemapMax = null;
         protected const string kDistortionBlurRemapMax = "_DistortionBlurRemapMax";
-        protected MaterialProperty preRefractionPass = null;
-        protected const string kPreRefractionPass = "_PreRefractionPass";
         protected MaterialProperty enableFogOnTransparent = null;
         protected const string kEnableFogOnTransparent = "_EnableFogOnTransparent";
         protected MaterialProperty enableBlendModePreserveSpecularLighting = null;
@@ -192,7 +190,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             distortionBlurScale = FindProperty(kDistortionBlurScale, props, false);
             distortionBlurRemapMin = FindProperty(kDistortionBlurRemapMin, props, false);
             distortionBlurRemapMax = FindProperty(kDistortionBlurRemapMax, props, false);
-            preRefractionPass = FindProperty(kPreRefractionPass, props, false);
 
             enableFogOnTransparent = FindProperty(kEnableFogOnTransparent, props, false);
             enableBlendModePreserveSpecularLighting = FindProperty(kEnableBlendModePreserveSpecularLighting, props, false);
@@ -253,8 +250,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     m_MaterialEditor.ShaderProperty(enableBlendModePreserveSpecularLighting, StylesBaseUnlit.enableBlendModePreserveSpecularLightingText);
                 if (enableFogOnTransparent != null)
                     m_MaterialEditor.ShaderProperty(enableFogOnTransparent, StylesBaseUnlit.enableTransparentFogText);
-                if (preRefractionPass != null)
-                    m_MaterialEditor.ShaderProperty(preRefractionPass, StylesBaseUnlit.transparentPrepassText);
                 EditorGUI.indentLevel--;
             }
 
@@ -406,7 +401,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             {
                 material.SetOverrideTag("RenderType", "Transparent");
                 material.SetInt("_ZWrite", 0);
-                var isPrepass = material.HasProperty(kPreRefractionPass) && material.GetFloat(kPreRefractionPass) > 0.0f;
+                var isPrepass = HDRenderQueue.k_RenderQueue_PreRefraction.Contains(material.renderQueue);
                 material.renderQueue = (int)(isPrepass ? HDRenderQueue.Priority.PreRefraction : HDRenderQueue.Priority.Transparent) + (int)material.GetFloat(kTransparentSortPriority);
 
                 if (material.HasProperty(kBlendMode))
