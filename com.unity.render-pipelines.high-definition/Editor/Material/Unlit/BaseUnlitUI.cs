@@ -260,7 +260,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             {
                 case SurfaceType.Opaque:
                     OpaqueRenderQueue renderQueueOpaqueType;
-                    switch(renderQueueType)
+                    switch(HDRenderQueue.GetOpaqueEquivalent(renderQueueType)) //prevent issue when switching to one shader from another
                     {
                         case HDRenderQueue.RenderQueueType.Opaque:
                             renderQueueOpaqueType = OpaqueRenderQueue.Default;
@@ -291,7 +291,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     break;
                 case SurfaceType.Transparent:
                     TransparentRenderQueue renderQueueTransparentType;
-                    switch (renderQueueType)
+                    switch (HDRenderQueue.GetTransparentEquivalent(renderQueueType)) //prevent issue when switching to one shader from another
                     {
                         case HDRenderQueue.RenderQueueType.PreRefraction:
                             renderQueueTransparentType = TransparentRenderQueue.BeforeRefraction;
