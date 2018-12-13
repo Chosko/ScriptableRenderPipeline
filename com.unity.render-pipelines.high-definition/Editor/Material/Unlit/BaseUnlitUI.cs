@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering.HDPipeline;
 using UnityEngine.Rendering;
@@ -31,9 +32,12 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             public static string TransparencyInputsText = "Transparency Inputs";
             public static string optionText = "Surface Options";
             public static string surfaceTypeText = "Surface Type";
+            public static string renderingPassText = "Rendering Pass";
             public static string blendModeText = "Blending Mode";
 
             public static readonly string[] surfaceTypeNames = Enum.GetNames(typeof(SurfaceType));
+            public static readonly string[] opaqueRenderingPathNames = new[] { "Default", "After post-process" };
+            public static readonly string[] transparentRenderingPathNames = new[] { "Before refraction", "Default", "Low resolution", "After post-process" };
             public static readonly string[] blendModeNames = Enum.GetNames(typeof(BlendMode));
             public static readonly int[] blendModeValues = Enum.GetValues(typeof(BlendMode)) as int[];
 
@@ -71,6 +75,20 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         {
             Opaque,
             Transparent
+        }
+
+        public enum TransparentRenderQueue
+        {
+            BeforeRefraction,
+            Default,
+            LowResolution,
+            AfterPostProcessing
+        }
+
+        public enum OpaqueRenderQueue
+        {
+            Default,
+            AfterPostProcessing
         }
 
         // Enum values are hardcoded for retro-compatibility. Don't change them.
@@ -207,17 +225,116 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             if (surfaceType == null)
                 return;
 
-            EditorGUI.showMixedValue = surfaceType.hasMixedValue;
+            Material material = m_MaterialEditor.target as Material;
             var mode = (SurfaceType)surfaceType.floatValue;
+            var renderQueueType = HDRenderQueue.GetTypeByRenderQueueValue(material.renderQueue);
+            bool alphaTest = material.HasProperty(kAlphaCutoffEnabled) && material.GetFloat(kAlphaCutoffEnabled) > 0.0f;
 
-            EditorGUI.BeginChangeCheck();
-            mode = (SurfaceType)EditorGUILayout.Popup(StylesBaseUnlit.surfaceTypeText, (int)mode, StylesBaseUnlit.surfaceTypeNames);
-            if (EditorGUI.EndChangeCheck())
+            EditorGUI.showMixedValue = surfaceType.hasMixedValue;
+            var newMode = (SurfaceType)EditorGUILayout.Popup(StylesBaseUnlit.surfaceTypeText, (int)mode, StylesBaseUnlit.surfaceTypeNames);
+            if (newMode != mode) //EditorGUI.EndChangeCheck is called even if value remain the same after the popup. Prefer not to use it here
             {
                 m_MaterialEditor.RegisterPropertyChangeUndo("Surface Type");
-                surfaceType.floatValue = (float)mode;
+                surfaceType.floatValue = (float)newMode;
+                HDRenderQueue.RenderQueueType targetQueueType;
+                switch(newMode)
+                {
+                    case SurfaceType.Opaque:
+                        targetQueueType = HDRenderQueue.GetOpaqueEquivalent(HDRenderQueue.GetTypeByRenderQueueValue(material.renderQueue));
+                        break;
+                    case SurfaceType.Transparent:
+                        targetQueueType = HDRenderQueue.GetTransparentEquivalent(HDRenderQueue.GetTypeByRenderQueueValue(material.renderQueue));
+                        break;
+                    default:
+                        throw new ArgumentException("Unknown SurfaceType");
+                }
+                material.renderQueue = HDRenderQueue.ChangeType(targetQueueType, (int)transparentSortPriority.floatValue, alphaTest);
             }
-
+            EditorGUI.showMixedValue = false;
+            
+            bool isMixedRenderQueue = surfaceType.hasMixedValue || m_MaterialEditor.targets.Select(m => HDRenderQueue.GetTypeByRenderQueueValue(((Material)m).renderQueue)).Distinct().Count() > 1;
+            EditorGUI.showMixedValue = isMixedRenderQueue;
+            ++EditorGUI.indentLevel;
+            switch (mode)
+            {
+                case SurfaceType.Opaque:
+                    OpaqueRenderQueue renderQueueOpaqueType;
+                    switch(renderQueueType)
+                    {
+                        case HDRenderQueue.RenderQueueType.Opaque:
+                            renderQueueOpaqueType = OpaqueRenderQueue.Default;
+                            break;
+                        case HDRenderQueue.RenderQueueType.AfterPostProcessOpaque:
+                            renderQueueOpaqueType = OpaqueRenderQueue.AfterPostProcessing;
+                            break;
+                        default:
+                            throw new ArgumentException("Cannot map to OpaqueRenderQueue");
+                    }
+                    var newRenderQueueOpaqueType = (OpaqueRenderQueue)EditorGUILayout.Popup(StylesBaseUnlit.renderingPassText, (int)renderQueueOpaqueType, StylesBaseUnlit.opaqueRenderingPathNames);
+                    if (newRenderQueueOpaqueType != renderQueueOpaqueType) //EditorGUI.EndChangeCheck is called even if value remain the same after the popup. Prefer not to use it here
+                    {
+                        m_MaterialEditor.RegisterPropertyChangeUndo("Rendering Path");
+                        switch (newRenderQueueOpaqueType)
+                        {
+                            case OpaqueRenderQueue.Default:
+                                renderQueueType = HDRenderQueue.RenderQueueType.Opaque;
+                                break;
+                            case OpaqueRenderQueue.AfterPostProcessing:
+                                renderQueueType = HDRenderQueue.RenderQueueType.AfterPostProcessOpaque;
+                                break;
+                            default:
+                                throw new ArgumentException("Unknown OpaqueRenderQueue");
+                        }
+                        material.renderQueue = HDRenderQueue.ChangeType(renderQueueType, alphaTest: alphaTest);
+                    }
+                    break;
+                case SurfaceType.Transparent:
+                    TransparentRenderQueue renderQueueTransparentType;
+                    switch (renderQueueType)
+                    {
+                        case HDRenderQueue.RenderQueueType.PreRefraction:
+                            renderQueueTransparentType = TransparentRenderQueue.BeforeRefraction;
+                            break;
+                        case HDRenderQueue.RenderQueueType.Transparent:
+                            renderQueueTransparentType = TransparentRenderQueue.Default;
+                            break;
+                        case HDRenderQueue.RenderQueueType.LowTransparent:
+                            renderQueueTransparentType = TransparentRenderQueue.LowResolution;
+                            break;
+                        case HDRenderQueue.RenderQueueType.AfterPostprocessTransparent:
+                            renderQueueTransparentType = TransparentRenderQueue.AfterPostProcessing;
+                            break;
+                        default:
+                            throw new ArgumentException("Cannot map to TransparentRenderQueue");
+                    }
+                    var newRenderQueueTransparentType = (TransparentRenderQueue)EditorGUILayout.Popup(StylesBaseUnlit.renderingPassText, (int)renderQueueTransparentType, StylesBaseUnlit.transparentRenderingPathNames);
+                    if (newRenderQueueTransparentType != renderQueueTransparentType) //EditorGUI.EndChangeCheck is called even if value remain the same after the popup. Prefer not to use it here
+                    {
+                        m_MaterialEditor.RegisterPropertyChangeUndo("Rendering Path");
+                        switch (newRenderQueueTransparentType)
+                        {
+                            case TransparentRenderQueue.BeforeRefraction:
+                                renderQueueType = HDRenderQueue.RenderQueueType.PreRefraction;
+                                break;
+                            case TransparentRenderQueue.Default:
+                                renderQueueType = HDRenderQueue.RenderQueueType.Transparent;
+                                break;
+                            case TransparentRenderQueue.LowResolution:
+                                renderQueueType = HDRenderQueue.RenderQueueType.LowTransparent;
+                                break;
+                            case TransparentRenderQueue.AfterPostProcessing:
+                                renderQueueType = HDRenderQueue.RenderQueueType.AfterPostprocessTransparent;
+                                break;
+                            default:
+                                throw new ArgumentException("Unknown TransparentRenderQueue");
+                        }
+                        material.renderQueue = HDRenderQueue.ChangeType(renderQueueType, offset: (int)transparentSortPriority.floatValue);
+                    }
+                    break;
+                default:
+                    throw new ArgumentException("Unknown SurfaceType");
+            }
+            --EditorGUI.indentLevel;
             EditorGUI.showMixedValue = false;
         }
 
@@ -395,14 +512,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
                 material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
                 material.SetInt("_ZWrite", 1);
-                material.renderQueue = alphaTestEnable ? (int)HDRenderQueue.Priority.OpaqueAlphaTest : (int)HDRenderQueue.Priority.Opaque;
             }
             else
             {
                 material.SetOverrideTag("RenderType", "Transparent");
                 material.SetInt("_ZWrite", 0);
-                var isPrepass = HDRenderQueue.k_RenderQueue_PreRefraction.Contains(material.renderQueue);
-                material.renderQueue = (int)(isPrepass ? HDRenderQueue.Priority.PreRefraction : HDRenderQueue.Priority.Transparent) + (int)material.GetFloat(kTransparentSortPriority);
 
                 if (material.HasProperty(kBlendMode))
                 {
