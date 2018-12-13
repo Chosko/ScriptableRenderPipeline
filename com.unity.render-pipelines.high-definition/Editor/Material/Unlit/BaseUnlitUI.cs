@@ -165,7 +165,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         protected virtual SurfaceType defaultSurfaceType { get { return SurfaceType.Opaque; } }
 
-        protected virtual bool showBlendModePopup { get { return true; } }
+        protected virtual bool showRefractionBlendModePopup { get { return true; } }
+        protected virtual bool showPreRefractionPass { get { return true; } }
 
         // The following set of functions are call by the ShaderGraph
         // It will allow to display our common parameters + setup keyword correctly for them
@@ -307,9 +308,17 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                         default:
                             throw new ArgumentException("Cannot map to TransparentRenderQueue");
                     }
-                    var newRenderQueueTransparentType = (TransparentRenderQueue)EditorGUILayout.Popup(StylesBaseUnlit.renderingPassText, (int)renderQueueTransparentType, StylesBaseUnlit.transparentRenderingPathNames);
+                    var names = StylesBaseUnlit.transparentRenderingPathNames;
+                    if (!showPreRefractionPass)
+                    {
+                        names = names.Skip(1).ToArray();
+                        --renderQueueTransparentType;     //keep index sync with displayed value
+                    }
+                    var newRenderQueueTransparentType = (TransparentRenderQueue)EditorGUILayout.Popup(StylesBaseUnlit.renderingPassText, (int)renderQueueTransparentType, names);
                     if (newRenderQueueTransparentType != renderQueueTransparentType) //EditorGUI.EndChangeCheck is called even if value remain the same after the popup. Prefer not to use it here
                     {
+                        if (!showPreRefractionPass)
+                            ++newRenderQueueTransparentType;    //keep index sync with displayed value
                         m_MaterialEditor.RegisterPropertyChangeUndo("Rendering Path");
                         switch (newRenderQueueTransparentType)
                         {
@@ -359,11 +368,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             SurfaceTypePopup();
             if (surfaceTypeValue == SurfaceType.Transparent)
             {
-                if (blendMode != null && showBlendModePopup)
+                if (blendMode != null && showRefractionBlendModePopup)
                     BlendModePopup();
 
                 EditorGUI.indentLevel++;
-                if (enableBlendModePreserveSpecularLighting != null && blendMode != null && showBlendModePopup)
+                if (enableBlendModePreserveSpecularLighting != null && blendMode != null && showRefractionBlendModePopup)
                     m_MaterialEditor.ShaderProperty(enableBlendModePreserveSpecularLighting, StylesBaseUnlit.enableBlendModePreserveSpecularLightingText);
                 if (enableFogOnTransparent != null)
                     m_MaterialEditor.ShaderProperty(enableFogOnTransparent, StylesBaseUnlit.enableTransparentFogText);
