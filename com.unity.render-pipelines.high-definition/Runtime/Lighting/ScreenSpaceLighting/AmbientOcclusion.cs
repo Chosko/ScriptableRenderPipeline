@@ -223,7 +223,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 }
 
                 // Grab current viewport scale factor - needed to handle RTHandle auto resizing
-                var viewport = camera.doubleBufferedViewportScale;
+                var viewport = camera.viewportScale;
 
                 // Textures used for rendering
                 RTHandle depthMap, destination;
@@ -440,8 +440,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._Occlusion, destination);
 
             // Calculate the thread group count and add a dispatch command with them.
-            uint xsize, ysize, zsize;
-            cs.GetKernelThreadGroupSizes(kernel, out xsize, out ysize, out zsize);
+            cs.GetKernelThreadGroupSizes(kernel, out var xsize, out var ysize, out var zsize);
 
             cmd.DispatchCompute(
                 cs, kernel,
