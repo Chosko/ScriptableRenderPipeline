@@ -10,7 +10,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 
     internal static class HDRenderQueue
     {
-        public const int k_TransparentPriorityQueueRange = 100;
+        const int k_TransparentPriorityQueueRange = 100;
 
         public enum Priority
         {
@@ -45,5 +45,9 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         public static readonly RenderQueueRange k_RenderQueue_All = new RenderQueueRange { lowerBound = 0, upperBound = 5000 };
 
         public static bool Contains(this RenderQueueRange range, int value) => range.lowerBound <= value && value <= range.upperBound;
+
+        public static int Clamps(this RenderQueueRange range, int value) => Math.Max(range.lowerBound, Math.Min(value, range.upperBound));
+
+        public static int ClampsTransparentRangePriority(int value) => Math.Max(-k_TransparentPriorityQueueRange, Math.Min(value, k_TransparentPriorityQueueRange));
     }
 }
