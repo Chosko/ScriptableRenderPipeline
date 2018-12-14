@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added Wizard helping to configure HDRP project.
 - Added new UI for decal material to allow remapping and scaling of some properties
 - Added cascade shadow visualisation toggle in HD shadow settings
+- Added icons for assets.
 - Added post-processing features (work in progress)
 - Post-processing now uses the generic volume framework
 - New depth-of-field, bloom, panini projection effects (motion blur is currently missing)
