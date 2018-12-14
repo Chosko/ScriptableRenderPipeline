@@ -3,6 +3,7 @@ using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor.Experimental.Rendering.LightweightPipeline;
 #endif
+using UnityEngine.Experimental.VoxelizedShadowMap;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.PostProcessing;
 
@@ -165,8 +166,14 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
             SupportedRenderingFeatures.active = new SupportedRenderingFeatures()
             {
                 reflectionProbeSupportFlags = SupportedRenderingFeatures.ReflectionProbeSupportFlags.None,
-                defaultMixedLightingMode = SupportedRenderingFeatures.LightmapMixedBakeMode.Subtractive,
-                supportedMixedLightingModes = SupportedRenderingFeatures.LightmapMixedBakeMode.Subtractive,
+                //defaultMixedLightingMode = SupportedRenderingFeatures.LightmapMixedBakeMode.Subtractive,
+                //supportedMixedLightingModes = SupportedRenderingFeatures.LightmapMixedBakeMode.Subtractive,
+                //seongdae;
+                defaultMixedLightingMode = SupportedRenderingFeatures.LightmapMixedBakeMode.IndirectOnly,
+                supportedMixedLightingModes =
+                    SupportedRenderingFeatures.LightmapMixedBakeMode.IndirectOnly |
+                    SupportedRenderingFeatures.LightmapMixedBakeMode.Subtractive,
+                //seongdae;
                 supportedLightmapBakeTypes = LightmapBakeType.Baked | LightmapBakeType.Mixed,
                 supportedLightmapsModes = LightmapsMode.CombinedDirectional | LightmapsMode.NonDirectional,
                 rendererSupportsLightProbeProxyVolumes = false,
@@ -265,11 +272,18 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
 
             renderingData.cameraData = cameraData;
             InitializeLightData(visibleLights, maxSupportedLocalLightsPerPass, maxSupportedVertexLights, out renderingData.lightData);
-            InitializeShadowData(hasDirectionalShadowCastingLight, hasLocalShadowCastingLight, out renderingData.shadowData);
+            InitializeShadowData(hasDirectionalShadowCastingLight, hasLocalShadowCastingLight, ref renderingData.lightData, out renderingData.shadowData);//seongdae;
             renderingData.supportsDynamicBatching = pipelineAsset.supportsDynamicBatching;
         }
 
-        void InitializeShadowData(bool hasDirectionalShadowCastingLight, bool hasLocalShadowCastingLight, out ShadowData shadowData)
+        //seongdae;
+        //temporally
+        private static bool _allowScreenSpaceShadowCompute = true;
+        private static bool _ignoreScreenSpaceShadowCompute = false;
+        //temporally
+        //seongdae;
+
+        void InitializeShadowData(bool hasDirectionalShadowCastingLight, bool hasLocalShadowCastingLight, ref LightData lightData, out ShadowData shadowData)//seongdae;
         {
             // Until we can have keyword stripping forcing single cascade hard shadows on gles2
             bool supportsScreenSpaceShadows = SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2;
@@ -301,6 +315,53 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
             shadowData.localShadowAtlasWidth = shadowData.localShadowAtlasHeight = pipelineAsset.localShadowAtlasResolution;
             shadowData.supportsSoftShadows = pipelineAsset.supportsSoftShadows;
             shadowData.bufferBitCount = 16;
+
+            //seongdae;
+            //temporally
+            if (Input.GetMouseButtonUp(0))
+            {
+                _allowScreenSpaceShadowCompute = _allowScreenSpaceShadowCompute ? false : true;
+                //_ignoreScreenSpaceShadowCompute = _ignoreScreenSpaceShadowCompute ? false : true;
+            }
+            //temporally
+
+            if (hasDirectionalShadowCastingLight && _allowScreenSpaceShadowCompute)
+            {
+                var mainLight = lightData.visibleLights[lightData.mainLightIndex].light;
+                var vxShadowMap = mainLight.GetComponent<DirectionalVxShadowMap>();
+
+                bool vxShadowMapIsValid = (vxShadowMap != null && vxShadowMap.IsValid());
+
+                shadowData.requiresScreenSpaceShadowCompute = vxShadowMapIsValid;
+                shadowData.requiresScreenSpaceShadowResolve = shadowData.requiresScreenSpaceShadowCompute;
+                shadowData.directionalVxShadowMap = vxShadowMapIsValid ? vxShadowMap : null;
+
+                //temporally
+                if (_ignoreScreenSpaceShadowCompute)
+                    shadowData.directionalVxShadowMap = null;
+                //temporally
+
+                if (Application.isPlaying && HideStaticShadows.isCastStaticShadows)
+                {
+                    HideStaticShadows.TurnOffStaticShadows();
+                }
+            }
+            else
+            {
+                shadowData.requiresScreenSpaceShadowCompute = false;
+                shadowData.directionalVxShadowMap = null;
+
+                if (Application.isPlaying && HideStaticShadows.isCastStaticShadows == false)
+                {
+                    HideStaticShadows.TurnOnStaticShadows();
+                }
+            }
+
+            if (Application.isPlaying == false && HideStaticShadows.isCastStaticShadows == false)
+            {
+                HideStaticShadows.TurnOnStaticShadows();
+            }
+            //seongdae;
 
             shadowData.renderedDirectionalShadowQuality = LightShadows.None;
             shadowData.renderedLocalShadowQuality = LightShadows.None;

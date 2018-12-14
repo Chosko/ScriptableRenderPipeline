@@ -10,6 +10,7 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
         private LocalShadowsPass m_LocalShadowPass;
         private SetupForwardRenderingPass m_SetupForwardRenderingPass;
         private ScreenSpaceShadowResolvePass m_ScreenSpaceShadowResovePass;
+        private ScreenSpaceShadowComputePass m_ScreenSpaceShadowComputePass; //seongdae;
         private CreateLightweightRenderTexturesPass m_CreateLightweightRenderTexturesPass;
         private BeginXRRenderingPass m_BeginXrRenderingPass;
         private SetupLightweightConstanstPass m_SetupLightweightConstants;
@@ -49,6 +50,7 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
             m_LocalShadowPass = new LocalShadowsPass(renderer);
             m_SetupForwardRenderingPass = new SetupForwardRenderingPass(renderer);
             m_ScreenSpaceShadowResovePass = new ScreenSpaceShadowResolvePass(renderer);
+            m_ScreenSpaceShadowComputePass = new ScreenSpaceShadowComputePass(renderer); //seongdae;
             m_CreateLightweightRenderTexturesPass = new CreateLightweightRenderTexturesPass(renderer);
             m_BeginXrRenderingPass = new BeginXRRenderingPass(renderer);
             m_SetupLightweightConstants = new SetupLightweightConstanstPass(renderer);
@@ -100,7 +102,8 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
             // For now VR requires a depth prepass until we figure out how to properly resolve texture2DMS in stereo
             requiresDepthPrepass |= renderingData.cameraData.isStereoEnabled;
 
-            if (renderingData.shadowData.renderDirectionalShadows)
+            if (renderingData.shadowData.renderDirectionalShadows) //seongdae;
+            //if (renderingData.shadowData.renderDirectionalShadows && renderingData.shadowData.requiresScreenSpaceShadowCompute == false) //seongdae;
             {
                 m_DirectionalShadowPass.Setup(DirectionalShadowmap);
                 renderer.EnqueuePass(m_DirectionalShadowPass);
@@ -124,8 +127,18 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
             if (renderingData.shadowData.renderDirectionalShadows &&
                 renderingData.shadowData.requiresScreenSpaceShadowResolve)
             {
-                m_ScreenSpaceShadowResovePass.Setup(baseDescriptor, ScreenSpaceShadowmap);
-                renderer.EnqueuePass(m_ScreenSpaceShadowResovePass);
+                //seongdae;
+                if (renderingData.shadowData.requiresScreenSpaceShadowCompute)
+                {
+                    m_ScreenSpaceShadowComputePass.Setup(baseDescriptor, ScreenSpaceShadowmap);
+                    renderer.EnqueuePass(m_ScreenSpaceShadowComputePass);
+                }
+                else
+                {
+                    m_ScreenSpaceShadowResovePass.Setup(baseDescriptor, ScreenSpaceShadowmap);
+                    renderer.EnqueuePass(m_ScreenSpaceShadowResovePass);
+                }
+                //seongdae;
             }
 
             bool requiresDepthAttachment = requiresCameraDepth && !requiresDepthPrepass;

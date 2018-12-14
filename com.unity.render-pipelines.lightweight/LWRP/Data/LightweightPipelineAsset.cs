@@ -415,6 +415,13 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
             get { return resources != null ? resources.SamplingShader : null; }
         }
 
+        //seongdae;
+        public ComputeShader screenSpaceShadowComputeShader
+        {
+            get { return resources != null ? resources.ScreenSpaceShadowComputeShader : null; }
+        }
+        //seongdae;
+
         public XRGraphicsConfig savedXRGraphicsConfig
         {
             get { return m_SavedXRConfig; }

@@ -215,9 +215,9 @@ Shader "LightweightPipeline/Standard (Physically Based)"
             #include "LWRP/ShaderLibrary/LightweightPassMetaPBR.hlsl"
 
             ENDHLSL
-        }
-
+        }  
     }
+
     FallBack "Hidden/InternalErrorShader"
     CustomEditor "LightweightStandardGUI"
 }

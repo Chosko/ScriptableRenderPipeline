@@ -112,6 +112,59 @@ Shader "LightweightPipeline/Terrain/Standard Terrain"
             #include "LWRP/ShaderLibrary/LightweightPassDepthOnly.hlsl"
             ENDHLSL
         }
+        //seongdae
+        /*Pass
+        {
+            Name "LinearizedDepth"
+            Tags { "LightMode" = "LinearizedDepth" }
+
+            ZWrite On
+            ZTest LEqual
+            Cull[_Cull]
+
+            HLSLPROGRAM
+            #pragma vertex LinearizedVertex
+            #pragma fragment LinearizedFragment
+
+            #include "LWRP/ShaderLibrary/InputSurfacePBR.hlsl"
+
+            float4 _clipPlane;
+
+            struct VertexInput
+            {
+                float4 vertex : POSITION;
+            };
+
+            struct VertexToFragment
+            {
+                float4 pos : SV_POSITION;
+                float4 posVS : COLOR0;
+            };
+
+            VertexToFragment LinearizedVertex(VertexInput input)
+            {
+                VertexToFragment output;
+
+                float4 posWS = mul(UNITY_MATRIX_M, float4(input.vertex.xyz, 1.0));
+                float4 posVS = mul(UNITY_MATRIX_V, float4(posWS.xyz, 1.0));
+                float4 posPS = mul(UNITY_MATRIX_P, float4(posVS.xyz, 1.0));
+
+                output.pos = posPS;
+                output.posVS = posVS;
+
+                return output;
+            }
+
+            float4 LinearizedFragment(VertexToFragment input) : SV_Target
+            {
+                float linearizedPosZ = -input.posVS.z;
+                float linearizedDepth = (linearizedPosZ - _clipPlane.x) / _clipPlane.y;
+
+                return float4(linearizedDepth, 0.0, 0.0, 0.0);
+            }
+            ENDHLSL
+        }*/
+        //seongdae
     }
     Dependency "AddPassShader" = "Hidden/LightweightPipeline/Terrain/Standard Terrain Add Pass"
     Dependency "BaseMapShader" = "Hidden/LightweightPipeline/Terrain/Standard Terrain Base"

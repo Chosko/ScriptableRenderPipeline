@@ -53,6 +53,11 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
 
         Material[] m_Materials;
 
+        //seongdae;
+        ComputeShader m_ScreenSpaceShadowComputerShader;
+        public ComputeShader screenSpaceShadowComputeShader { get { return m_ScreenSpaceShadowComputerShader; } }
+        //seongdae;
+
         
         public LightweightForwardRenderer(LightweightPipelineAsset pipelineAsset)
         {
@@ -64,6 +69,8 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
                 CoreUtils.CreateEngineMaterial(pipelineAsset.blitShader),
                 CoreUtils.CreateEngineMaterial(pipelineAsset.screenSpaceShadowShader),
             };
+
+            m_ScreenSpaceShadowComputerShader = pipelineAsset.screenSpaceShadowComputeShader; //seongdae;
 
             postProcessRenderContext = new PostProcessRenderContext();
 

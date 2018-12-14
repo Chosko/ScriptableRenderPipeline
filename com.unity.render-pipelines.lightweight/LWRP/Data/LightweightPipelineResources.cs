@@ -6,4 +6,6 @@ public class LightweightPipelineResources : ScriptableObject
     public Shader CopyDepthShader;
     public Shader ScreenSpaceShadowShader;
     public Shader SamplingShader;
+
+    public ComputeShader ScreenSpaceShadowComputeShader; //seongdae;
 }

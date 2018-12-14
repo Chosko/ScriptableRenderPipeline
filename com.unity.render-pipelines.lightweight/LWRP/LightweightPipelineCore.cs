@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine.Experimental.VoxelizedShadowMap;//seongdae;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.PostProcessing;
 using UnityEngine.XR;
@@ -64,6 +65,7 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
     {
         public bool renderDirectionalShadows;
         public bool requiresScreenSpaceShadowResolve;
+        public bool requiresScreenSpaceShadowCompute; //seongdae;
         public int directionalShadowAtlasWidth;
         public int directionalShadowAtlasHeight;
         public int directionalLightCascadeCount;
@@ -73,6 +75,8 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
         public int localShadowAtlasHeight;
         public bool supportsSoftShadows;
         public int bufferBitCount;
+
+        public DirectionalVxShadowMap directionalVxShadowMap; //seongdae;
 
         public LightShadows renderedDirectionalShadowQuality;
         public LightShadows renderedLocalShadowQuality;
@@ -96,6 +100,7 @@ namespace UnityEngine.Experimental.Rendering.LightweightPipeline
         public static readonly string LocalShadows = "_LOCAL_SHADOWS_ENABLED";
         public static readonly string SoftShadows = "_SHADOWS_SOFT";
         public static readonly string CascadeShadows = "_SHADOWS_CASCADE";
+        public static readonly string DirectionalVxShadows = "_SHADOWS_DIRECTIONAL_VOXELIZED"; //seongdae;
         public static readonly string DepthNoMsaa = "_DEPTH_NO_MSAA";
         public static readonly string DepthMsaa2 = "_DEPTH_MSAA_2";
         public static readonly string DepthMsaa4 = "_DEPTH_MSAA_4";
